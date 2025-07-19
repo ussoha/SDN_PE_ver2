@@ -1,59 +1,72 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { dbConnect } from "@/lib/db"
-import Contact from "@/models/Contact"
-import mongoose from "mongoose"
+// File: /app/api/Contacts/[id]/route.ts
+import { type NextRequest, NextResponse } from "next/server";
+import { dbConnect } from "@/lib/db";
+import Contact from "@/models/Contact";
+import mongoose from "mongoose";
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+// GET /api/Contacts/[id]
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> } // ✅ Next.js 15 requires Promise
+) {
   try {
-    await dbConnect()
+    await dbConnect();
+    const { id } = await params; // ✅ cần await
 
-    if (!mongoose.Types.ObjectId.isValid(params.id)) {
-      return NextResponse.json({ error: "Invalid contact ID" }, { status: 400 })
+    // Validate ObjectId
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return NextResponse.json({ error: "Invalid contact ID" }, { status: 400 });
     }
 
-    const contact = await Contact.findById(params.id).lean()
+    const contact = await Contact.findById(id).lean();
 
     if (!contact) {
-      return NextResponse.json({ error: "Contact not found" }, { status: 404 })
+      return NextResponse.json({ error: "Contact not found" }, { status: 404 });
     }
 
-    return NextResponse.json(contact)
+    return NextResponse.json(contact);
   } catch (error) {
-    console.error("Error fetching contact:", error)
-    return NextResponse.json({ error: "Failed to fetch contact" }, { status: 500 })
+    console.error("Error fetching contact:", error);
+    return NextResponse.json({ error: "Failed to fetch contact" }, { status: 500 });
   }
 }
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+// PUT /api/Contacts/[id]
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> } // ✅ phải là Promise
+) {
   try {
-    const body = await request.json()
-    const { name, email, phone, group } = body
+    const { id } = await params; // ✅ await Promise
 
-    // Validation
+    const body = await request.json();
+    const { name, email, phone, group } = body;
+
+    // Basic validation
     if (!name || !email) {
-      return NextResponse.json({ error: "Name and email are required" }, { status: 400 })
+      return NextResponse.json({ error: "Name and email are required" }, { status: 400 });
     }
 
-    // Email format validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      return NextResponse.json({ error: "Invalid email format" }, { status: 400 })
+      return NextResponse.json({ error: "Invalid email format" }, { status: 400 });
     }
 
-    if (!mongoose.Types.ObjectId.isValid(params.id)) {
-      return NextResponse.json({ error: "Invalid contact ID" }, { status: 400 })
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return NextResponse.json({ error: "Invalid contact ID" }, { status: 400 });
     }
 
-    await dbConnect()
+    await dbConnect();
 
-    // Check if email already exists for a different contact
+    // Kiểm tra trùng email
     const existingContact = await Contact.findOne({
       email: email.trim().toLowerCase(),
-      _id: { $ne: params.id },
-    })
+      _id: { $ne: id },
+    });
 
     if (existingContact) {
-      return NextResponse.json({ error: "Email already exists" }, { status: 409 })
+      return NextResponse.json({ error: "Email already exists" }, { status: 409 });
     }
 
     const updateData = {
@@ -61,50 +74,62 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       email: email.trim().toLowerCase(),
       phone: phone?.trim() || undefined,
       group: group?.trim() || undefined,
-    }
+    };
 
-    const updatedContact = await Contact.findByIdAndUpdate(params.id, updateData, { new: true, runValidators: true })
+    const updatedContact = await Contact.findByIdAndUpdate(id, updateData, {
+      new: true,
+      runValidators: true,
+    });
 
     if (!updatedContact) {
-      return NextResponse.json({ error: "Contact not found" }, { status: 404 })
+      return NextResponse.json({ error: "Contact not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ message: "Contact updated successfully", contact: updatedContact })
+    return NextResponse.json({
+      message: "Contact updated successfully",
+      contact: updatedContact,
+    });
   } catch (error: any) {
-    console.error("Error updating contact:", error)
+    console.error("Error updating contact:", error);
 
-    // Handle mongoose validation errors
+    // Mongoose validation error
     if (error.name === "ValidationError") {
-      const validationErrors = Object.values(error.errors).map((err: any) => err.message)
-      return NextResponse.json({ error: validationErrors.join(", ") }, { status: 400 })
+      const validationErrors = Object.values(error.errors).map((err: any) => err.message);
+      return NextResponse.json({ error: validationErrors.join(", ") }, { status: 400 });
     }
 
-    // Handle duplicate key error
+    // Duplicate key error
     if (error.code === 11000) {
-      return NextResponse.json({ error: "Email already exists" }, { status: 409 })
+      return NextResponse.json({ error: "Email already exists" }, { status: 409 });
     }
 
-    return NextResponse.json({ error: "Failed to update contact" }, { status: 500 })
+    return NextResponse.json({ error: "Failed to update contact" }, { status: 500 });
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+// DELETE /api/Contacts/[id]
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> } // ✅ Next 15: Promise
+) {
   try {
-    if (!mongoose.Types.ObjectId.isValid(params.id)) {
-      return NextResponse.json({ error: "Invalid contact ID" }, { status: 400 })
+    const { id } = await params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return NextResponse.json({ error: "Invalid contact ID" }, { status: 400 });
     }
 
-    await dbConnect()
+    await dbConnect();
 
-    const deletedContact = await Contact.findByIdAndDelete(params.id)
+    const deletedContact = await Contact.findByIdAndDelete(id);
 
     if (!deletedContact) {
-      return NextResponse.json({ error: "Contact not found" }, { status: 404 })
+      return NextResponse.json({ error: "Contact not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ message: "Contact deleted successfully" })
+    return NextResponse.json({ message: "Contact deleted successfully" });
   } catch (error) {
-    console.error("Error deleting contact:", error)
-    return NextResponse.json({ error: "Failed to delete contact" }, { status: 500 })
+    console.error("Error deleting contact:", error);
+    return NextResponse.json({ error: "Failed to delete contact" }, { status: 500 });
   }
 }

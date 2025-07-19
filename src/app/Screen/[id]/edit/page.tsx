@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/Components/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/Components/select"
 import { ArrowLeft, Save } from "lucide-react"
 import Link from "next/link"
+import { PageProps } from "@/types/page-props"
 
 interface Contact {
   _id: string
@@ -20,7 +21,7 @@ interface Contact {
   group?: string
 }
 
-export default function EditContactPage({ params }: { params: { id: string } }) {
+export default function EditContactPage({ params }: PageProps) {
   const [formData, setFormData] = useState({
     name: "",
     email: "",

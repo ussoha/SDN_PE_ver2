@@ -73,7 +73,7 @@ export default function ContactManagerPage() {
 
   const fetchContacts = async () => {
     try {
-      const response = await fetch("/api/contacts")
+      const response = await fetch("/api/Contacts")
       if (response.ok) {
         const data = await response.json()
         setContacts(data)
@@ -129,7 +129,7 @@ export default function ContactManagerPage() {
 
     setFormLoading(true)
     try {
-      const response = await fetch("/api/contacts", {
+      const response = await fetch("/api/Contacts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -165,7 +165,7 @@ export default function ContactManagerPage() {
 
     setFormLoading(true)
     try {
-      const response = await fetch(`/api/contacts/${editingContact._id}`, {
+      const response = await fetch(`/api/Contacts/${editingContact._id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -201,7 +201,7 @@ export default function ContactManagerPage() {
 
   const handleDeleteContact = async (id: string) => {
     try {
-      const response = await fetch(`/api/contacts/${id}`, { method: "DELETE" })
+      const response = await fetch(`/api/Contacts/${id}`, { method: "DELETE" })
       if (response.ok) {
         setContacts(contacts.filter((contact) => contact._id !== id))
         setDeleteContactId(null)
